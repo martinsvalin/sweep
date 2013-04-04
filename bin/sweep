@@ -1,0 +1,9 @@
+#!/usr/bin/env ruby
+require File.expand_path('../../lib/sweep', __FILE__)
+require File.expand_path('../../lib/sweep/terminal-gui', __FILE__)
+
+Sweep::TerminalGUI.init_screen do
+  game = Sweep.new(rows: Sweep::TerminalGUI.rows, cols: Sweep::TerminalGUI.cols)
+  Sweep::TerminalGUI.play game
+end
+
