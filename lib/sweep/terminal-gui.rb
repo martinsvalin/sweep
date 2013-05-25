@@ -42,27 +42,23 @@ class Sweep::TerminalGUI
     loop do
       case Curses.getch
       # Quit
-      when /[qQ]/ then break
+      when /[qQ]/; break
 
       # Movement
-      when Curses::Key::LEFT then move -1, 0
-      when Curses::Key::DOWN then move 0, 1
-      when Curses::Key::UP then move 0, -1
-      when Curses::Key::RIGHT then move 1, 0
-      when ?h then move -1,  0
-      when ?j then move  0,  1
-      when ?k then move  0, -1
-      when ?l then move  1,  0
+      when ?h, Curses::Key::LEFT;  move -1,  0
+      when ?j, Curses::Key::DOWN;  move  0,  1
+      when ?k, Curses::Key::UP;    move  0, -1
+      when ?l, Curses::Key::RIGHT; move  1,  0
 
       # Game controls
-      when /\s/ then open
-      when /[fF]/ then toggle_flag
+      when /\s/; open
+      when /[fF]/; toggle_flag
       end
     end
   end
 
   def draw_untouched_board
-    write game.rows, 0, "." * game.cols.count
+    write game.rows, 0, ?. * game.cols.count
   end
 
   def move(dx, dy)
@@ -71,10 +67,20 @@ class Sweep::TerminalGUI
     display_new_position
   end
 
+  def open_surrounding_tiles(x, y)
+    game.x, game.y = x, y
+
+    game.surrounding_tiles.each do |tile|
+      game.x, game.y = *tile
+      open if !game.opened? && !game.mined? && game.nearby_mines_count == 0
+    end
+  end
+
   def open
     game.open
     update_board_at_current_position
     display_new_position
+    open_surrounding_tiles *game.current_position
   rescue Sweep::GameOver
     display_game_over
   end
@@ -109,7 +115,16 @@ class Sweep::TerminalGUI
     Curses.clrtoeol
   end
 
+  def reveal_mines
+    game.rows.each do |y|
+      game.cols.each do |x|
+        write(y, x, ?#) if game.mines.include? [x, y]
+      end
+    end
+  end
+
   def display_game_over
+    reveal_mines
     middle_line = game.rows.last / 2
     center = game.cols.last / 2 - 5
     write middle_line - 2, center, "***************"
@@ -132,8 +147,8 @@ class Sweep::TerminalGUI
 
   def char_for_current_position
     case game.status_for_current_position
-    when Sweep::FLAGGED then ?F
-    when Sweep::OPENED then game.nearby_mines_count.to_s
+    when :flagged; ?F
+    when :opened; game.nearby_mines_count.to_s
     else ?.
     end
   end
